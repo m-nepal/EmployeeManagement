@@ -8,28 +8,31 @@ public class AppDbContext : IdentityDbContext
 }
 
 #### Step 2 : Add ASP.NET Core Identity Services
+
 In ConfigureServices() method of the Startup class, include the following line of code.
 
 services.AddIdentity<IdentityUser, IdentityRole>()
         .AddEntityFrameworkStores<AppDbContext>();
         
 #### Step 3 : Add Authentication middleware to the request pipeline
+
 public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 {
     app.UseStaticFiles();
     app.UseAuthentication();
-    app.UseMvc(routes =]
+    app.UseMvc(routes =>
     {
         routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
     });
 }
+
 #### Step 4 : Add Identity Migration
-In Visual Studio, from the Package Manager Console window execute the following command to add a new migration
+
 Add-Migration AddingIdentity
-This migration contains code that creates the tables required by the ASP.NET Core Identity system.
-Error : The entity type 'IdentityUserLogin[string]' requires a primary key to be defined
-If you get this error, the most likely cause is that you are overriding OnModelCreating() method in your application DbContext class but not calling the base IdentityDbContext class OnModelCreating() method. 
-Keys of Identity tables are mapped in OnModelCreating method of IdentityDbContext class. So, to fix this error, all you need to do is, call the base class OnModelCreating() method using the base keyword as shown below.
+Error : The entity type 'IdentityUserLogin<string>' requires a primary key to be defined
+    
+To fix this error, all you need to do is, call the base class OnModelCreating() method using the base keyword as shown below.
+
 public class AppDbContext : IdentityDbContext
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
