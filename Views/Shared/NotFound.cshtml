@@ -1,0 +1,11 @@
+﻿@model ErrorViewModel
+@{
+    ViewBag.Title = "Not Found";
+}
+<h1>@Model.ErrorMessage</h1>
+<h1>@Model.ErrorPath</h1>
+<h1>@Model.ErrorQueryString</h1>
+
+<a asp-action="index" asp-controller="home">
+    Click here to navigate to the home page.
+</a>

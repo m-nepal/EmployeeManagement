@@ -1,0 +1,191 @@
+﻿startup.cs class
+---------------------------
+
+ private IConfiguration _config;
+
+public Startup(IConfiguration config)
+{
+    _config = config;
+}
+// This method gets called by the runtime. Use this method to add services to the container.
+// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+public void ConfigureServices(IServiceCollection services)
+{
+}
+ 
+ 
+public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILogger<Startup> logger)
+{
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+
+    app.Use(async (context, next) =>
+    {
+        //await context.Response.WriteAsync("Hello from 2nd middleware!");
+        //await next();
+
+        logger.LogInformation("MW1: Incoming Request");
+        await next();
+        logger.LogInformation("MW1: Outgoing Request");
+    });
+
+    app.Use(async (context, next) =>
+    {
+        //await context.Response.WriteAsync("Hello from 2nd middleware!");
+        //await next();
+
+        logger.LogInformation("MW2: Incoming Request");
+        await next();
+        logger.LogInformation("MW2: Outgoing Request");
+    });
+
+    app.Run(async (context) =>
+    {                
+        await context.Response.WriteAsync("MW3: Request handled and response produced");
+        logger.LogInformation("MW3: Request handled and response produced");
+        //await context.Response.WriteAsync(_config["MyKey"]);//System.Diagnostics.Process.GetCurrentProcess().ProcessName
+    });
+          
+}
+
+This will execute like this.
+
+
+Microsoft.AspNetCore.Hosting.Internal.WebHost:Information: Request starting HTTP / 1.1 GET http://localhost:5000/  
+EmployeeManagement.Startup:Information: MW1: Incoming Request
+EmployeeManagement.Startup:Information: MW2: Incoming Request
+'dotnet.exe'(CoreCLR: clrhost): Loaded 'C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\2.2.0\Microsoft.AspNetCore.WebUtilities.dll'.Skipped loading symbols. Module is optimized and the debugger option 'Just My Code' is enabled.
+EmployeeManagement.Startup:Information: MW3: Request handled and response produced
+EmployeeManagement.Startup:Information: MW2: Outgoing Request
+EmployeeManagement.Startup:Information: MW1: Outgoing Request
+Microsoft.AspNetCore.Hosting.Internal.WebHost:Information: Request finished in 43.153ms 200
+Microsoft.AspNetCore.Hosting.Internal.WebHost:Information: Request starting HTTP / 1.1 GET http://localhost:5000/favicon.ico  
+EmployeeManagement.Startup:Information: MW1: Incoming Request
+EmployeeManagement.Startup:Information: MW2: Incoming Request
+EmployeeManagement.Startup:Information: MW3: Request handled and response produced
+EmployeeManagement.Startup:Information: MW2: Outgoing Request
+EmployeeManagement.Startup:Information: MW1: Outgoing Request
+Microsoft.AspNetCore.Hosting.Internal.WebHost:Information: Request finished in 32.4958ms 200
+           
+		   
+------static files----
+// Add Default Files Middleware
+app.UseDefaultFiles();
+// Add Static Files Middleware
+app.UseStaticFiles(); 
+
+UseDefaultFiles must be called before UseStaticFiles to serve the default file. 
+UseDefaultFiles is a URL rewriter that doesn't actually serve the file. 
+It simply rewrites the URL to the default document which will then be served by the Static Files Middleware. 
+The URL displayed in the address bar still reflects the root URL and not the rewritten URL. 
+
+
+The following are the default files which UseDefaultFiles middleware looks for
+index.htm
+index.html
+default.htm
+default.html 
+
+If you want to use another document like foo.html for example as your default document, you can do so using the following code. 
+
+// Specify foo.html as the default document
+DefaultFilesOptions defaultFilesOptions = new DefaultFilesOptions();
+defaultFilesOptions.DefaultFileNames.Clear();
+defaultFilesOptions.DefaultFileNames.Add("foo.html");
+// Add Default Files Middleware
+app.UseDefaultFiles(defaultFilesOptions);
+// Add Static Files Middleware
+app.UseStaticFiles(); 
+
+
+--------UseFileServer Middleware -----------------
+
+
+UseFileServer combines the functionality of UseStaticFiles, UseDefaultFiles and UseDirectoryBrowser middleware. 
+DirectoryBrowser middleware, enables directory browsing and allows users to see files within a specified directory. 
+We could replace UseStaticFiles and UseDefaultFiles middlewares with UseFileServer Middleware.
+
+FileServerOptions fileServerOptions = new FileServerOptions();
+fileServerOptions.DefaultFilesOptions.DefaultFileNames.Clear();
+fileServerOptions.DefaultFilesOptions.DefaultFileNames.Add("foo.html");
+app.UseFileServer(fileServerOptions);
+
+The important point to note here is the pattern that we use to add middleware to our application's request processing pipeline.
+In most cases we add middleware using the extension methods that start with the word USE. For example, 
+UseDeveloperExceptionPage()
+UseDefaultFiles()
+UseStaticFiles()
+UseFileServer()
+If you want to customise these middleware components, we use the respective OPTIONS object. For example notice the respective OPTIONS objects we use. 
+Middleware					Options Object
+UseDeveloperExceptionPage	DeveloperExceptionPageOptions
+UseDefaultFiles				DefaultFilesOptions
+UseStaticFiles				StaticFileOptions
+UseFileServer				FileServerOptions
+
+------------developer exception page -----
+
+ if (env.IsDevelopment())
+            {
+                DeveloperExceptionPageOptions doptions = new DeveloperExceptionPageOptions
+                {
+                    SourceCodeLineCount = 2
+                };
+                app.UseDeveloperExceptionPage(doptions);
+            }
+
+            app.UseFileServer();           
+            
+
+            app.Run(async (context) =>
+            {
+                throw new Exception("Some Error Procesing the request.!!");
+                await context.Response.WriteAsync("Hello World!");
+                
+            });
+
+----------------------addmvc and addmvccore---------------
+services.AddMvc();
+services.AddMvcCore();
+addmvc call addmvcore internally
+
+
+////conventional and attribute routing
+
+----------Scoped Service vs Transient Service vs Singleton Service---------------------------
+
+The following is the main difference between a scoped service and a transient service.  
+
+With a scoped service we get the same instance within the scope of a given http request but a new instance across different http requests 
+
+With a transient service a new instance is provided every time an instance is requested whether it is in the scope of the same http request or across different http requests 
+
+With a singleton service, there is only a single instance. An instance is created, when the service is first requested and that single instance is used by all http requests throughout the application.
+
+
+--------------Migrations---------------
+Get-Help about_entityframeworkcore
+Add-Migration [-Name] <String> [-OutputDir <String>] [-Context <String>] [-Project <String>] [-StartupProject <String>] [<CommonParameters>]
+update-database
+
+------logging provider----------------
+
+inject ILogger<type of controller / class> logger
+---write to file ----
+NLog, elmah
+
+NLog --> NLog.Web.AspNetCore
+ public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+			.ConfigureLogging((hostingContext, logging) =>
+						  {
+							  logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+							  logging.AddConsole();
+							  logging.AddDebug();
+							  logging.AddEventSourceLogger();
+							  // Enable NLog as one of the Logging Provider
+							logging.AddNLog();
+              })
+
