@@ -10,8 +10,8 @@ public class AppDbContext : IdentityDbContext
 #### Step 2 : Add ASP.NET Core Identity Services
 In ConfigureServices() method of the Startup class, include the following line of code.
 
-services.AddIdentity[IdentityUser, IdentityRole]()
-        .AddEntityFrameworkStores[AppDbContext]();
+services.AddIdentity<IdentityUser, IdentityRole>()
+        .AddEntityFrameworkStores<AppDbContext>();
         
 #### Step 3 : Add Authentication middleware to the request pipeline
 public void Configure(IApplicationBuilder app, IHostingEnvironment env)
